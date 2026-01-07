@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { PrismaService } from 'src/database/prisma.service';
+import { PaginatedResponse } from 'src/common/pagination/paginated-response';
 
 @Injectable()
 export class QuestionsService {
@@ -13,10 +14,24 @@ export class QuestionsService {
     });
   }
 
-  async findAll() {
-    return await this.prisma.questions.findMany({
-      include: { answers: true, user: { select: { name: true, email: true } } },
-    });
+  async findAll(page: number, limit: number) {
+    page = Math.max(1, page);
+    limit = Math.max(1, limit);
+    const skip = (page - 1) * limit;
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.questions.findMany({
+        skip,
+        take: limit,
+        include: {
+          user: { select: { name: true } },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.questions.count(),
+    ]);
+    return new PaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: number) {

@@ -9,6 +9,8 @@ import {
   UseGuards,
   Request,
   ParseIntPipe,
+  Query,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
@@ -30,8 +32,11 @@ export class QuestionsController {
 
   @Get()
   @UseGuards(AuthGuard)
-  findAll() {
-    return this.questionsService.findAll();
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit = 10,
+  ) {
+    return this.questionsService.findAll(page, limit);
   }
 
   @Get(':id')
